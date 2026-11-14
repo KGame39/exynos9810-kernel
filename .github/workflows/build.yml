@@ -2,47 +2,46 @@ name: Build Note 9 Kernel (2886 MHz)
 
 on:
   workflow_dispatch:
-    push:
-        branches:
-              - ems
+  push:
+    branches:
+      - ems
 
-              jobs:
-                build:
-                    runs-on: ubuntu-22.04
-                        steps:
-                              - name: Checkout Kernel Source
-                                      uses: actions/checkout@v4
-                                              with:
-                                                        depth: 1
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          depth: 1
 
-                                                              - name: Install Build Dependencies
-                                                                      run: |
-                                                                                sudo apt-get update
-                                                                                          sudo apt-get install -y bc bison build-essential ccache curl flex git gnupg gperf libelf-dev libncurses5-dev libssl-dev libxml2 libxml2-utils lz4 python3 python-is-python3 unzip zip
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache curl flex git gnupg gperf libelf-dev libncurses5-dev libssl-dev libxml2 libxml2-utils lz4 python3 python-is-python3 unzip zip
 
-                                                                                                - name: Download AOSP Clang 20 (r547379)
-                                                                                                        run: |
-                                                                                                                  mkdir -p clang
-                                                                                                                            curl -sL https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz | tar -xz -C clang
+      - name: Download AOSP Clang 20 (r547379)
+        run: |
+          mkdir -p clang
+          curl -sL https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz | tar -xz -C clang
 
-                                                                                                                                  - name: Compile Image.gz and DTBs
-                                                                                                                                          run: |
-                                                                                                                                                    export PATH="$PWD/clang/bin:$PATH"
-                                                                                                                                                              export ARCH=arm64
-                                                                                                                                                                        export SUBARCH=arm64
-                                                                                                                                                                                  make O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- crownlte_defconfig
-                                                                                                                                                                                            grep -q "CONFIG_ICE=y" out/.config && echo "ERROR: CONFIG_ICE still enabled!" && exit 1 || echo "OK: CONFIG_ICE disabled"
-                                                                                                                                                                                                      make -j$(nproc) O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- Image.gz dtbs
+      - name: Compile Image.gz and DTBs
+        run: |
+          export PATH="$PWD/clang/bin:$PATH"
+          export ARCH=arm64
+          export SUBARCH=arm64
+          make O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- crownlte_defconfig
+          grep -q "CONFIG_ICE=y" out/.config && echo "ERROR: CONFIG_ICE still enabled!" && exit 1 || echo "OK: CONFIG_ICE disabled"
+          make -j$(nproc) O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- Image.gz dtbs
 
-                                                                                                                                                                                                            - name: Package Artifacts
-                                                                                                                                                                                                                    run: |
-                                                                                                                                                                                                                              mkdir -p release
-                                                                                                                                                                                                                                        cp out/arch/arm64/boot/Image.gz release/
-                                                                                                                                                                                                                                                  cp out/arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb release/ 2>/dev/null || true
+      - name: Package Artifacts
+        run: |
+          mkdir -p release
+          cp out/arch/arm64/boot/Image.gz release/
+          cp out/arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb release/ 2>/dev/null || true
 
-                                                                                                                                                                                                                                                        - name: Upload Image.gz & DTB
-                                                                                                                                                                                                                                                                uses: actions/upload-artifact@v4
-                                                                                                                                                                                                                                                                        with:
-                                                                                                                                                                                                                                                                                  name: crownlte-2886mhz-kernel
-                                                                                                                                                                                                                                                                                            path: release/
-                                                                                                                                                                                                                                                                                            
+      - name: Upload Image.gz & DTB
+        uses: actions/upload-artifact@v4
+        with:
+          name: crownlte-2886mhz-kernel
+          path: release/
