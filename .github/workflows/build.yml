@@ -20,10 +20,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bc bison build-essential ccache curl flex git gnupg gperf libelf-dev libncurses5-dev libssl-dev libxml2 libxml2-utils lz4 python3 python-is-python3 unzip zip
 
-      - name: Download AOSP Clang 20 (r547379)
+      - name: Download AOSP Clang 18 (r522817)
         run: |
           mkdir -p clang
-          curl -sL https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz | tar -xz -C clang
+          curl -sL https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/llvm-r522817/clang-r522817.tar.gz | tar -xz -C clang
 
       - name: Compile CrownTrail N960F (2886 MHz)
         run: |
@@ -61,6 +61,7 @@ jobs:
               "$CFG_DIR/eur_defconfig" \
               "$CFG_DIR/apollo_defconfig" > "$CFG_DIR/tmp_defconfig"
           echo "CONFIG_KSU=y" >> "$CFG_DIR/tmp_defconfig"
+          echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CFG_DIR/tmp_defconfig"
           echo "# CONFIG_ICE is not set" >> "$CFG_DIR/tmp_defconfig"
 
           make ARCH=arm64 CC=clang tmp_defconfig
@@ -72,11 +73,10 @@ jobs:
           mkdir -p release
           cp arch/arm64/boot/Image release/
           cp arch/arm64/boot/dtb.img release/ 2>/dev/null || true
-          cp arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb release/ 2>/dev/null || true
           ls -lh release/
 
       - name: Upload Image & DTB
         uses: actions/upload-artifact@v4
         with:
-          name: crownlte-2886mhz-kernel
+          name: crownlte-2886mhz-kernel-clang18
           path: release/
