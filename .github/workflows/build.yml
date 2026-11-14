@@ -41,6 +41,7 @@ jobs:
           else
             make $MAKE_ARGS crownlte_defconfig
           fi
+          ./scripts/config --file out/.config --set-str LITTLE_CPU_MASK "0-3" --set-str BIG_CPU_MASK "4-7" --disable ICE
           make $MAKE_ARGS olddefconfig
           grep -q "CONFIG_ICE=y" out/.config && echo "ERROR: CONFIG_ICE still enabled!" && exit 1 || echo "OK: CONFIG_ICE disabled"
           make -j$(nproc) $MAKE_ARGS Image.gz dtbs
