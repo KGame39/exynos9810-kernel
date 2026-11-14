@@ -25,34 +25,57 @@ jobs:
           mkdir -p clang
           curl -sL https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz | tar -xz -C clang
 
-      - name: Compile Image.gz and DTBs
+      - name: Compile CrownTrail N960F (2886 MHz)
         run: |
-          export PATH="$PWD/clang/bin:$PATH"
+          export PATH="$PWD/clang/bin:$PWD/clang/lib:$PATH"
           export ARCH=arm64
           export SUBARCH=arm64
           export ANDROID_MAJOR_VERSION=q
-          export PLATFORM_VERSION=10
-          echo "=== Available crownlte configs ==="
-          ls -la arch/arm64/configs/*crown* arch/arm64/configs/*exynos9810* 2>/dev/null || true
-          MAKE_ARGS="O=out ARCH=arm64 CC=clang LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-"
-          DEFCONFIG=$(ls arch/arm64/configs/*crownlte*defconfig 2>/dev/null | head -n 1 | xargs -r basename)
-          echo "Selected defconfig: $DEFCONFIG"
-          make $MAKE_ARGS "$DEFCONFIG"
-          if [ -f arch/arm64/configs/exynos9810.config ]; then
-            ./scripts/kconfig/merge_config.sh -m -O out out/.config arch/arm64/configs/exynos9810.config
-          fi
-          ./scripts/config --file out/.config --set-str LITTLE_CPU_MASK "0-3" --set-str BIG_CPU_MASK "4-7" --disable ICE
-          yes "" | make $MAKE_ARGS oldconfig
-          grep -q "CONFIG_ICE=y" out/.config && echo "ERROR: CONFIG_ICE still enabled!" && exit 1 || echo "OK: CONFIG_ICE disabled"
-          make -j$(nproc) $MAKE_ARGS Image.gz dtbs
+          export PLATFORM_VERSION=13.0.0
+          export KSU_MANUAL_HOOK=y
+          export CONFIG_KSU_MANUAL_HOOK=y
+          export CONFIG_MACH_EXYNOS9810_CROWNLTE_EUR_OPEN=y
+          export CONFIG_THINLTO=y
+          export CONFIG_UNIFIEDLTO=y
+          export CONFIG_LLVM_MLGO_REGISTER=y
+          export CONFIG_LLVM_POLLY=y
+          export CONFIG_LLVM_DFA_JUMP_THREAD=y
+          export KALLSYMS_EXTRA_PASS=1
+          export LLVM=1
+          export CC="$PWD/clang/bin/clang"
+          export REAL_CC="$PWD/clang/bin/clang"
+          export LD="$PWD/clang/bin/ld.lld"
+          export AR="$PWD/clang/bin/llvm-ar"
+          export NM="$PWD/clang/bin/llvm-nm"
+          export OBJCOPY="$PWD/clang/bin/llvm-objcopy"
+          export OBJDUMP="$PWD/clang/bin/llvm-objdump"
+          export READELF="$PWD/clang/bin/llvm-readelf"
+          export STRIP="$PWD/clang/bin/llvm-strip"
+          export LOCALVERSION="-CrownTrail-v1.8-rc1-N960F-2886MHz-KSUN"
+
+          sed -i 's/strlcpy(tmp.release, "4.9.337",/strlcpy(tmp.release, "5.4.186",/g' kernel/sys.c
+
+          CFG_DIR="arch/arm64/configs"
+          cat "$CFG_DIR/exynos9810_defconfig" \
+              "$CFG_DIR/crownlte_defconfig" \
+              "$CFG_DIR/eur_defconfig" \
+              "$CFG_DIR/apollo_defconfig" > "$CFG_DIR/tmp_defconfig"
+          echo "CONFIG_KSU=y" >> "$CFG_DIR/tmp_defconfig"
+          echo "# CONFIG_ICE is not set" >> "$CFG_DIR/tmp_defconfig"
+
+          make ARCH=arm64 CC=clang tmp_defconfig
+          grep -q "CONFIG_ICE=y" .config && echo "ERROR: CONFIG_ICE still enabled!" && exit 1 || echo "OK: CONFIG_ICE disabled"
+          make -j$(nproc --all) ARCH=arm64 CC=clang
 
       - name: Package Artifacts
         run: |
           mkdir -p release
-          cp out/arch/arm64/boot/Image.gz release/
-          cp out/arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb release/ 2>/dev/null || true
+          cp arch/arm64/boot/Image release/
+          cp arch/arm64/boot/dtb.img release/ 2>/dev/null || true
+          cp arch/arm64/boot/dts/exynos/exynos9810-crownlte_eur_open_26.dtb release/ 2>/dev/null || true
+          ls -lh release/
 
-      - name: Upload Image.gz & DTB
+      - name: Upload Image & DTB
         uses: actions/upload-artifact@v4
         with:
           name: crownlte-2886mhz-kernel
