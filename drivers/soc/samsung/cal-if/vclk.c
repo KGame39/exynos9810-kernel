@@ -225,6 +225,15 @@ unsigned long vclk_recalc_rate(unsigned int id)
 	if (IS_DFS_VCLK(vclk->id) ||
 	    IS_COMMON_VCLK(vclk->id) ||
 	    IS_ACPM_VCLK(vclk->id)) {
+			if (vclk->margin_id == MARGIN_G3D) {
+				unsigned int pll_id = cmucal_get_id("PLL_G3D");
+				unsigned int pll_rate = pll_id ? ra_recalc_rate(pll_id) : 0;
+
+				if (pll_rate > 598000) {
+				vclk->vrate = pll_rate;
+				return vclk->vrate;
+				}
+				}
 		for (i = 0; i < vclk->num_rates; i++) {
 			ret = ra_compare_clk_list(vclk->lut[i].params,
 						  vclk->list,

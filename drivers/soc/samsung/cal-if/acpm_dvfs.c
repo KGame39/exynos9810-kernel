@@ -31,7 +31,7 @@ int exynos_acpm_set_rate(unsigned int id, unsigned long rate)
 	struct vclk *vclk;
 	int ret;
 
-	vclk = cmucal_get_node(id);
+	vclk = cmucal_get_node(ACPM_VCLK_TYPE | id);
 	if (vclk && vclk->margin_id == MARGIN_G3D) {
 		if (!pll_g3d_id)
 			pll_g3d_id = cmucal_get_id("PLL_G3D");
@@ -57,13 +57,13 @@ int exynos_acpm_set_rate(unsigned int id, unsigned long rate)
 				acpm_ipc_send_data(acpm_dvfs.ch_num, &config);
 			}
 
-			exynos_acpm_set_volt_margin(id, margin_uv);
+			exynos_acpm_set_volt_margin(ACPM_VCLK_TYPE | id, margin_uv);
 			ret = ra_set_rate(pll_g3d_id, (unsigned int)rate);
 			g3d_pll_overridden = true;
 			return ret;
 		} else if (pll_g3d_id && g3d_pll_overridden) {
 			ra_set_rate(pll_g3d_id, 598000);
-			exynos_acpm_set_volt_margin(id, 0);
+			exynos_acpm_set_volt_margin(ACPM_VCLK_TYPE | id, 0);
 			g3d_pll_overridden = false;
 		}
 	}
@@ -95,7 +95,7 @@ unsigned long exynos_acpm_get_rate(unsigned int id)
 	struct vclk *vclk;
 	int ret;
 
-	vclk = cmucal_get_node(id);
+	vclk = cmucal_get_node(ACPM_VCLK_TYPE | id);
 	if (vclk && vclk->margin_id == MARGIN_G3D && g3d_pll_overridden && pll_g3d_id)
 		return (unsigned long)ra_recalc_rate(pll_g3d_id);
 
