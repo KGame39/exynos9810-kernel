@@ -36,20 +36,42 @@ static unsigned int cal_id;
 
 int gpexbe_clock_get_level_num(void)
 {
-	return cal_dfs_get_lv_num(cal_id);
+	int lv_num = cal_dfs_get_lv_num(cal_id);
+
+	return (lv_num == 8) ? 12 : lv_num;
 }
 
 int gpexbe_clock_get_rate_asv_table(struct freq_volt *fv_array, int level_num)
 {
 	int i;
 	int ret = 0;
-	struct dvfs_rate_volt rate_volt[48];
+	struct dvfs_rate_volt rate_volt[48] = { 0 };
 
 	ret = cal_dfs_get_rate_asv_table(cal_id, rate_volt);
 
 	if (!ret) {
 		/* TODO: print error. Also remove this size limit by using dynamic alloc */
 		return ret;
+	}
+
+	if (ret == 8 && level_num >= 12) {
+		/* Shift stock 8 levels (598000..260000) down by 4 slots */
+		for (i = 7; i >= 0; i--) {
+			fv_array[i + 4].freq = rate_volt[i].rate;
+			fv_array[i + 4].volt = rate_volt[i].volt;
+		}
+
+		/* Populate top 4 OC bins in descending order */
+		fv_array[0].freq = 839000;
+		fv_array[0].volt = 825000;
+		fv_array[1].freq = 764000;
+		fv_array[1].volt = 787500;
+		fv_array[2].freq = 702000;
+		fv_array[2].volt = 750000;
+		fv_array[3].freq = 683000;
+		fv_array[3].volt = 737500;
+
+		return 12;
 	}
 
 	for (i = 0; i < level_num; i++) {
@@ -105,6 +127,8 @@ int gpexbe_clock_init(void)
 
 	pm_info.boot_clock = cal_dfs_get_boot_freq(cal_id);
 	pm_info.max_clock_limit = (int)cal_dfs_get_max_freq(cal_id);
+	if (pm_info.max_clock_limit < 839000)
+		pm_info.max_clock_limit = 839000;
 
 	gpex_utils_get_exynos_context()->pm_info = &pm_info;
 
