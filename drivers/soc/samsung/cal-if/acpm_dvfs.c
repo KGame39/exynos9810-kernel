@@ -58,11 +58,11 @@ int exynos_acpm_set_rate(unsigned int id, unsigned long rate)
 			}
 
 			exynos_acpm_set_volt_margin(ACPM_VCLK_TYPE | id, margin_uv);
-			ret = ra_set_rate(pll_g3d_id, (unsigned int)rate);
+			ret = ra_set_rate(pll_g3d_id, (unsigned int)(rate * 1000)); 
 			g3d_pll_overridden = true;
 			return ret;
 		} else if (pll_g3d_id && g3d_pll_overridden) {
-			ra_set_rate(pll_g3d_id, 598000);
+			ra_set_rate(pll_g3d_id, 598000000);
 			exynos_acpm_set_volt_margin(ACPM_VCLK_TYPE | id, 0);
 			g3d_pll_overridden = false;
 		}
@@ -97,7 +97,7 @@ unsigned long exynos_acpm_get_rate(unsigned int id)
 
 	vclk = cmucal_get_node(ACPM_VCLK_TYPE | id);
 	if (vclk && vclk->margin_id == MARGIN_G3D && g3d_pll_overridden && pll_g3d_id)
-		return (unsigned long)ra_recalc_rate(pll_g3d_id);
+		return (unsigned long)(ra_recalc_rate(pll_g3d_id) / 1000); 
 
 	config.cmd = cmd;
 	config.response = true;

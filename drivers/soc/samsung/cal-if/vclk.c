@@ -227,7 +227,7 @@ unsigned long vclk_recalc_rate(unsigned int id)
 	    IS_ACPM_VCLK(vclk->id)) {
 			if (vclk->margin_id == MARGIN_G3D) {
 				unsigned int pll_id = cmucal_get_id("PLL_G3D");
-				unsigned int pll_rate = pll_id ? ra_recalc_rate(pll_id) : 0;
+				unsigned int pll_rate = pll_id ? (ra_recalc_rate(pll_id) / 1000) : 0; 
 
 				if (pll_rate > 598000) {
 				vclk->vrate = pll_rate;
