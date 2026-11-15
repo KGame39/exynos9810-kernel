@@ -10,6 +10,7 @@
 
 #include "acpm_dvfs.h"
 #include "cmucal.h"
+#include "ra.h"
 
 #ifndef CONFIG_ARM_EXYNOS_DEVFREQ
 #define PM_QOS_BUS_THROUGHPUT (11)
@@ -19,12 +20,53 @@ static struct acpm_dvfs acpm_dvfs;
 static struct acpm_dvfs acpm_noti_mif;
 static struct pm_qos_request mif_request_from_acpm;
 
+static bool g3d_pll_overridden;
+static unsigned int pll_g3d_id;
+
 int exynos_acpm_set_rate(unsigned int id, unsigned long rate)
 {
 	struct ipc_config config;
 	unsigned int cmd[4];
 	unsigned long long before, after, latency;
+	struct vclk *vclk;
 	int ret;
+
+	vclk = cmucal_get_node(id);
+	if (vclk && vclk->margin_id == MARGIN_G3D) {
+		if (!pll_g3d_id)
+			pll_g3d_id = cmucal_get_id("PLL_G3D");
+
+		if (pll_g3d_id && rate > 598000) {
+			int margin_uv = 118750;
+
+			if (rate <= 683000)
+				margin_uv = 50000;
+			else if (rate <= 702000)
+				margin_uv = 62500;
+			else if (rate <= 764000)
+				margin_uv = 93750;
+
+			if (!g3d_pll_overridden) {
+				config.cmd = cmd;
+				config.response = true;
+				config.indirection = false;
+				config.cmd[0] = id;
+				config.cmd[1] = 598000;
+				config.cmd[2] = FREQ_REQ;
+				config.cmd[3] = 0;
+				acpm_ipc_send_data(acpm_dvfs.ch_num, &config);
+			}
+
+			exynos_acpm_set_volt_margin(id, margin_uv);
+			ret = ra_set_rate(pll_g3d_id, (unsigned int)rate);
+			g3d_pll_overridden = true;
+			return ret;
+		} else if (pll_g3d_id && g3d_pll_overridden) {
+			ra_set_rate(pll_g3d_id, 598000);
+			exynos_acpm_set_volt_margin(id, 0);
+			g3d_pll_overridden = false;
+		}
+	}
 
 	config.cmd = cmd;
 	config.response = true;
@@ -50,7 +92,12 @@ unsigned long exynos_acpm_get_rate(unsigned int id)
 	struct ipc_config config;
 	unsigned int cmd[4];
 	unsigned long long before, after, latency;
+	struct vclk *vclk;
 	int ret;
+
+	vclk = cmucal_get_node(id);
+	if (vclk && vclk->margin_id == MARGIN_G3D && g3d_pll_overridden && pll_g3d_id)
+		return (unsigned long)ra_recalc_rate(pll_g3d_id);
 
 	config.cmd = cmd;
 	config.response = true;
