@@ -40,7 +40,7 @@ u32 kbase_reg_read32(struct kbase_device *kbdev, u32 reg_enum)
 {
 	u32 val;
 
-	if (WARN_ON(!kbase_reg_is_powered_access_allowed(kbdev, reg_enum)))
+	if (unlikely(!kbase_reg_is_powered_access_allowed(kbdev, reg_enum)))
 		return 0;
 	if (unlikely(!kbase_reg_is_accessible(kbdev, reg_enum,
 					      KBASE_REGMAP_PERM_READ | KBASE_REGMAP_WIDTH_32_BIT)))
@@ -64,7 +64,7 @@ u64 kbase_reg_read64(struct kbase_device *kbdev, u32 reg_enum)
 {
 	u64 val;
 
-	if (WARN_ON(!kbase_reg_is_powered_access_allowed(kbdev, reg_enum)))
+	if (unlikely(!kbase_reg_is_powered_access_allowed(kbdev, reg_enum)))
 		return 0;
 	if (unlikely(!kbase_reg_is_accessible(kbdev, reg_enum,
 					      KBASE_REGMAP_PERM_READ | KBASE_REGMAP_WIDTH_64_BIT)))
@@ -116,7 +116,7 @@ KBASE_EXPORT_TEST_API(kbase_reg_read64_coherent);
 
 void kbase_reg_write32(struct kbase_device *kbdev, u32 reg_enum, u32 value)
 {
-	if (WARN_ON(!kbase_reg_is_powered_access_allowed(kbdev, reg_enum)))
+	if (unlikely(!kbase_reg_is_powered_access_allowed(kbdev, reg_enum)))
 		return;
 	if (unlikely(!kbase_reg_is_accessible(kbdev, reg_enum,
 					      KBASE_REGMAP_PERM_WRITE | KBASE_REGMAP_WIDTH_32_BIT)))
@@ -136,7 +136,7 @@ KBASE_EXPORT_TEST_API(kbase_reg_write32);
 
 void kbase_reg_write64(struct kbase_device *kbdev, u32 reg_enum, u64 value)
 {
-	if (WARN_ON(!kbase_reg_is_powered_access_allowed(kbdev, reg_enum)))
+	if (unlikely(!kbase_reg_is_powered_access_allowed(kbdev, reg_enum)))
 		return;
 	if (unlikely(!kbase_reg_is_accessible(kbdev, reg_enum,
 					      KBASE_REGMAP_PERM_WRITE | KBASE_REGMAP_WIDTH_64_BIT)))
