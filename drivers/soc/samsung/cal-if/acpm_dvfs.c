@@ -37,7 +37,7 @@ int exynos_acpm_set_rate(unsigned int id, unsigned long rate)
 			pll_g3d_id = cmucal_get_id("PLL_G3D");
 
 		if (pll_g3d_id && rate > 598000) {
-			int margin_uv = 200000;
+			int margin_uv = 218750;
 			 
 			if (rate <= 683000)
 				margin_uv = 50000;
