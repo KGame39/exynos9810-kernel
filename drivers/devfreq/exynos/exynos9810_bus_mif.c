@@ -238,11 +238,13 @@ static int exynos9810_devfreq_mif_init_freq_table(struct exynos_devfreq_data *da
 		return -EINVAL;
 	}
 
-	max_freq = (u32)cal_dfs_get_max_freq(data->dfs_id);
+		max_freq = (u32)cal_dfs_get_max_freq(data->dfs_id);
 	if (!max_freq) {
 		dev_err(data->dev, "failed get max frequency\n");
 		return -EINVAL;
 	}
+	if (max_freq < 2002000)
+		max_freq = 2002000;
 
 	dev_info(data->dev, "max_freq: %uKhz, get_max_freq: %uKhz\n",
 			data->max_freq, max_freq);
