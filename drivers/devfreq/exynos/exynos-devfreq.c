@@ -871,7 +871,7 @@ static int exynos_devfreq_parse_ect(struct exynos_devfreq_data *data, const char
 	if (dvfs_domain == NULL)
 		return -ENODEV;
 
-		data->max_state = dvfs_domain->num_of_level;        // line 832
+	data->max_state = dvfs_domain->num_of_level;        // line 832
 	for (i = 0; i < dvfs_domain->num_of_level; ++i) {   // line 833
 		data->opp_list[i].idx = i;                  // line 834
 		data->opp_list[i].freq = dvfs_domain->list_level[i].level; // line 835
