@@ -468,6 +468,48 @@ static ssize_t store_scaling_devfreq_min(struct device *dev,
 }
 
 static DEVICE_ATTR(scaling_devfreq_min, 0640, show_scaling_devfreq_min, store_scaling_devfreq_min);
+static ssize_t show_scaling_devfreq_max(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct device *parent = dev->parent;
+	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
+	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
+	int val;
+
+	if (!data->pm_qos_class_max)
+		return 0;
+
+	val = pm_qos_read_req_value(data->pm_qos_class_max, &data->default_pm_qos_max);
+	if (val < 0) {
+		dev_err(dev, "failed to read requested value\n");
+		return 0;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", val);
+}
+
+static ssize_t store_scaling_devfreq_max(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	struct device *parent = dev->parent;
+	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
+	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
+	int ret;
+	u32 qos_value;
+
+	ret = sscanf(buf, "%u", &qos_value);
+	if (ret != 1)
+		return -EINVAL;
+
+	if (data->pm_qos_class_max && pm_qos_request_active(&data->default_pm_qos_max))
+		pm_qos_update_request(&data->default_pm_qos_max, qos_value);
+
+	data->devfreq->max_freq = qos_value;
+
+	return count;
+}
+
+static DEVICE_ATTR(scaling_devfreq_max, 0640, show_scaling_devfreq_max, store_scaling_devfreq_max);
 
 /* get frequency and delay time data from string */
 static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
@@ -829,16 +871,27 @@ static int exynos_devfreq_parse_ect(struct exynos_devfreq_data *data, const char
 	if (dvfs_domain == NULL)
 		return -ENODEV;
 
-	data->max_state = dvfs_domain->num_of_level;
-	for (i = 0; i < dvfs_domain->num_of_level; ++i) {
-		data->opp_list[i].idx = i;
-		data->opp_list[i].freq = dvfs_domain->list_level[i].level;
-		data->opp_list[i].volt = 0;
+		data->max_state = dvfs_domain->num_of_level;        // line 832
+	for (i = 0; i < dvfs_domain->num_of_level; ++i) {   // line 833
+		data->opp_list[i].idx = i;                  // line 834
+		data->opp_list[i].freq = dvfs_domain->list_level[i].level; // line 835
+		data->opp_list[i].volt = 0;                 // line 836
+	}                                                   // line 837
+
+	if (!strcmp(dvfs_domain_name, "dvfs_mif") &&
+	    data->max_state > 0 && data->opp_list[0].freq < 2002000) {
+		for (i = data->max_state; i > 0; --i) {
+			data->opp_list[i] = data->opp_list[i - 1];
+			data->opp_list[i].idx = i;
+		}
+		data->opp_list[0].idx = 0;
+		data->opp_list[0].freq = 2002000;
+		data->opp_list[0].volt = 0;
+		data->max_state++;
 	}
 
 	return 0;
 }
-#endif
 
 static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq_data *data)
 {
@@ -2184,6 +2237,9 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	}
 
 	data->old_volt = data->new_volt;
+	if (data->devfreq_type == DEVFREQ_MIF)
+	data->max_freq = 2002000;
+
 #ifdef CONFIG_EXYNOS_DVFS_MANAGER
 	data->dm_type = exynos_devfreq_get_dm_type(data->devfreq_type);
 	if (data->dm_type == DM_TYPE_END) {
@@ -2304,9 +2360,13 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		goto err_pm_noti;
 	}
 
-	ret = sysfs_create_file(&data->devfreq->dev.kobj, &dev_attr_scaling_devfreq_min.attr);
+		ret = sysfs_create_file(&data->devfreq->dev.kobj, &dev_attr_scaling_devfreq_min.attr);
 	if (ret)
 		dev_warn(data->dev, "failed create sysfs for devfreq pm_qos_min\n");
+
+	ret = sysfs_create_file(&data->devfreq->dev.kobj, &dev_attr_scaling_devfreq_max.attr);
+	if (ret)
+		dev_warn(data->dev, "failed create sysfs for devfreq pm_qos_max\n");
 
 #ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
 	ret = sysfs_create_group(&data->devfreq->dev.kobj, &exynos_devfreq_attr_group);
@@ -2405,6 +2465,7 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 	int nr_constraint;
 #endif
 	sysfs_remove_file(&data->devfreq->dev.kobj, &dev_attr_scaling_devfreq_min.attr);
+	sysfs_remove_file(&data->devfreq->dev.kobj, &dev_attr_scaling_devfreq_max.attr);
 #ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
 	sysfs_remove_group(&data->devfreq->dev.kobj, &exynos_devfreq_attr_group);
 #endif
