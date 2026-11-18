@@ -63,7 +63,7 @@ int gpexbe_clock_get_rate_asv_table(struct freq_volt *fv_array, int level_num)
 
 		/* Populate top 4 OC bins in descending order */
 		fv_array[0].freq = 839000;
-		fv_array[0].volt = 875000;
+		fv_array[0].volt = 887500;
 		fv_array[1].freq = 764000;
 		fv_array[1].volt = 787500;
 		fv_array[2].freq = 702000;
