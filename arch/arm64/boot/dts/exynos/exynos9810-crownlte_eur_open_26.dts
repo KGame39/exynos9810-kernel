@@ -5308,7 +5308,7 @@
 		interrupts = <0x0 0xb5 0x0>;
 		sibling-cpus = "4-7";
 		down-step = <0x1>;
-		max-freq-wo-ocp = <0x1b5fd0>;
+		max-freq-wo-ocp = <0x1e8c50>;
 		release-mode = <0x1>;
 		release-threshold = <0x32>;
 		release-duration = <0xf>;
@@ -5452,7 +5452,7 @@
 		gpu_runtime_pm_delay_time = <0x32>;
 		gpu_dvfs_polling_time = <0x1e>;
 		gpu_pmqos_int_disable = <0x1>;
-		gpu_pmqos_mif_max_clock = <0x1b5fd0>;
+		gpu_pmqos_mif_max_clock = <0x1e8c50>;
 		gpu_pmqos_mif_max_clock_base = <839000>;
 		gpu_cl_dvfs_start_base = <0x6f158>;
 		gpu_debug_level = <0x3>;
@@ -9591,7 +9591,7 @@
 		use_delay_time = "true";
 		delay_time_list = "20";
 		freq_info = <0x1fefc8 0x32c80 0xf78f0 0x32c80 0x1fefc8 0x1fefc8>;
-		boot_info = <0x28 0x1b5fd0>;
+		boot_info = <0x28 0x1e8c50>;
 		use_get_dev = "false";
 		polling_ms = <0x0>;
 		gov_name = "interactive";
