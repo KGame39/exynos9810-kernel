@@ -892,7 +892,7 @@ static int exynos_devfreq_parse_ect(struct exynos_devfreq_data *data, const char
 
 	return 0;
 }
-
+#endif
 static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq_data *data)
 {
 	const char *devfreq_type;
