@@ -52,8 +52,10 @@ struct cmucal_pll_table pll_cpucl1_rate_table[] = {
 };
 
 struct cmucal_pll_table pll_mif_rate_table[] = {
-	PLL_RATE_MPS(3731000000, 574, 4, 0),
 	PLL_RATE_MPS(4264000000, 492, 3, 0),
+	PLL_RATE_MPS(4004000000, 462, 3, 0),
+	PLL_RATE_MPS(3731000000, 574, 4, 0),
+	PLL_RATE_MPS(3588000000, 414, 3, 0),
 	PLL_RATE_MPS(1418000000, 709, 13, 0),
 	PLL_RATE_MPS(2576599854, 991, 5, 1),
 };

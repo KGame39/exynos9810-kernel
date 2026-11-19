@@ -22,6 +22,8 @@ static struct pm_qos_request mif_request_from_acpm;
 
 static bool g3d_pll_overridden;
 static unsigned int pll_g3d_id;
+static bool mif_pll_overridden;
+static unsigned int pll_mif_id;
 
 int exynos_acpm_set_rate(unsigned int id, unsigned long rate)
 {
@@ -67,7 +69,35 @@ int exynos_acpm_set_rate(unsigned int id, unsigned long rate)
 			g3d_pll_overridden = false;
 		}
 	}
+		if (vclk && vclk->margin_id == MARGIN_MIF) {
+		if (!pll_mif_id)
+			pll_mif_id = cmucal_get_id("PLL_MIF");
 
+		if (pll_mif_id && rate > 1794000) {
+			int margin_uv = 50000;
+
+			if (!mif_pll_overridden) {
+				config.cmd = cmd;
+				config.response = true;
+				config.indirection = false;
+				config.cmd[0] = id;
+				config.cmd[1] = 1794000;
+				config.cmd[2] = FREQ_REQ;
+				config.cmd[3] = 0;
+				acpm_ipc_send_data(acpm_dvfs.ch_num, &config);
+			}
+
+			exynos_acpm_set_volt_margin(ACPM_VCLK_TYPE | id, margin_uv);
+			ret = ra_set_rate(pll_mif_id, (unsigned int)(rate * 2000));
+			mif_pll_overridden = true;
+			return ret;
+		} else if (pll_mif_id && mif_pll_overridden) {
+			ra_set_rate(pll_mif_id, 3588000000U);
+			exynos_acpm_set_volt_margin(ACPM_VCLK_TYPE | id, 0);
+			mif_pll_overridden = false;
+		}
+	}
+ 
 	config.cmd = cmd;
 	config.response = true;
 	config.indirection = false;
@@ -97,8 +127,10 @@ unsigned long exynos_acpm_get_rate(unsigned int id)
 
 	vclk = cmucal_get_node(ACPM_VCLK_TYPE | id);
 	if (vclk && vclk->margin_id == MARGIN_G3D && g3d_pll_overridden && pll_g3d_id)
-		return (unsigned long)(ra_recalc_rate(pll_g3d_id) / 1000); 
-
+		return (unsigned long)(ra_recalc_rate(pll_g3d_id) / 1000);
+	if (vclk && vclk->margin_id == MARGIN_MIF && mif_pll_overridden && pll_mif_id)
+		return (unsigned long)(ra_recalc_rate(pll_mif_id) / 2000);
+ 
 	config.cmd = cmd;
 	config.response = true;
 	config.indirection = false;
