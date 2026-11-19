@@ -243,7 +243,7 @@ static int exynos9810_devfreq_mif_init_freq_table(struct exynos_devfreq_data *da
 		dev_err(data->dev, "failed get max frequency\n");
 		return -EINVAL;
 	}
-	if (0 && max_freq < 2002000)
+	if (max_freq < 2002000)
 		max_freq = 2002000;
 
 	dev_info(data->dev, "max_freq: %uKhz, get_max_freq: %uKhz\n",
