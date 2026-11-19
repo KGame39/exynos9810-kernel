@@ -878,7 +878,7 @@ static int exynos_devfreq_parse_ect(struct exynos_devfreq_data *data, const char
 		data->opp_list[i].volt = 0;                 // line 836
 	}                                                   // line 837
 
-	if (!strcmp(dvfs_domain_name, "dvfs_mif") &&
+	if (0 && !strcmp(dvfs_domain_name, "dvfs_mif") &&
 	    data->max_state > 0 && data->opp_list[0].freq < 2002000) {
 		for (i = data->max_state; i > 0; --i) {
 			data->opp_list[i] = data->opp_list[i - 1];
@@ -2237,7 +2237,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	}
 
 	data->old_volt = data->new_volt;
-	if (data->devfreq_type == DEVFREQ_MIF)
+	if (0 && data->devfreq_type == DEVFREQ_MIF)
 	data->max_freq = 2002000;
 
 #ifdef CONFIG_EXYNOS_DVFS_MANAGER
