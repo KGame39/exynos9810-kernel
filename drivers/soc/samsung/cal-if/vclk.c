@@ -687,6 +687,8 @@ static void vclk_bind(void)
 			if (ret)
 				pr_err("ECT ASV [%s] not found %d\n",
 					vclk->name, ret);
+			if (!strcmp(vclk->name, "dvfs_mif") && vclk->max_freq < 2002000)
+							vclk->max_freq = 2002000;
 		}
 	}
 }

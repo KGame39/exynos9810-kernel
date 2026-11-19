@@ -73,7 +73,7 @@ int exynos_acpm_set_rate(unsigned int id, unsigned long rate)
 		if (!pll_mif_id)
 			pll_mif_id = cmucal_get_id("PLL_MIF");
 
-		if (pll_mif_id && rate > 1794000) {
+		if (0 && pll_mif_id && rate > 1794000) {
 			int margin_uv = 50000;
 
 			if (!mif_pll_overridden) {
